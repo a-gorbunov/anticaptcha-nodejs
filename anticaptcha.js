@@ -1,5 +1,5 @@
-var Anticaptcha = function(clientKey) {
-    return new function(clientKey) {
+var Anticaptcha = function(clientKey, usePrecaching) {
+    return new function(clientKey, usePrecaching) {
         this.params = {
             host: 'api.anti-captcha.com',
             port: 80,
@@ -95,12 +95,16 @@ var Anticaptcha = function(clientKey) {
                 clientKey: this.params.clientKey,
                 taskId: taskId
             };
-
+            
             var waitingInterval;
             if (currentAttempt == 0) {
                 waitingInterval = firstAttemptWaitingInterval;
             } else {
                 waitingInterval = normalWaitingInterval;
+            }
+
+            if (usePrecaching) {
+                waitingInterval = 1;
             }
 
             console.log('Waiting %s seconds', waitingInterval);
@@ -163,94 +167,111 @@ var Anticaptcha = function(clientKey) {
         };
 
         this.jsonPostRequest = function(methodName, postData, cb) {
-            if (typeof process === 'object' && typeof require === 'function') { // NodeJS
-                var http = require('http');
+            if (!usePrecaching) {
+                if (typeof process === 'object' && typeof require === 'function') { // NodeJS
+                    var http = require('http');
 
-                // http request options
-                var options = {
-                    hostname: this.params.host,
-                    port: this.params.port,
-                    path: '/' + methodName,
-                    method: 'POST',
-                    headers: {
-                        'accept-encoding':  'gzip,deflate',
-                        'content-type':     'application/json; charset=utf-8',
-                        'accept':           'application/json',
-                        'content-length':   Buffer.byteLength(JSON.stringify(postData))
-                    }
-                };
+                    // http request options
+                    var options = {
+                        hostname: this.params.host,
+                        port: this.params.port,
+                        path: '/' + methodName,
+                        method: 'POST',
+                        headers: {
+                            'accept-encoding':  'gzip,deflate',
+                            'content-type':     'application/json; charset=utf-8',
+                            'accept':           'application/json',
+                            'content-length':   Buffer.byteLength(JSON.stringify(postData))
+                        }
+                    };
 
-                // console.log(options);
-                // console.log(JSON.stringify(postData));
+                    // console.log(options);
+                    // console.log(JSON.stringify(postData));
 
-                var req = http.request(options, function(response) { // on response
-                    var str = '';
+                    var req = http.request(options, function(response) { // on response
+                        var str = '';
 
-                    // another chunk of data has been recieved, so append it to `str`
-                    response.on('data', function (chunk) {
-                        str += chunk;
+                        // another chunk of data has been recieved, so append it to `str`
+                        response.on('data', function (chunk) {
+                            str += chunk;
+                        });
+
+                        // the whole response has been recieved, so we just print it out here
+                        response.on('end', function () {
+                            // console.log(str);
+
+                            try {
+                                var jsonResult = JSON.parse(str);
+                            } catch (err) {
+                                return cb(err);
+                            }
+
+                            if (jsonResult.errorId) {
+                                return cb(new Error(jsonResult.errorDescription, jsonResult.errorCode), jsonResult);
+                            }
+
+                            return cb(null, jsonResult);
+                        });
                     });
 
-                    // the whole response has been recieved, so we just print it out here
-                    response.on('end', function () {
-                        // console.log(str);
+                    // send post data
+                    req.write(JSON.stringify(postData));
+                    req.end();
 
-                        try {
-                            var jsonResult = JSON.parse(str);
-                        } catch (err) {
-                            return cb(err);
+                    // timeout in milliseconds
+                    req.setTimeout(connectionTimeout * 1000);
+                    req.on('timeout', function() {
+                        console.log('timeout');
+                        req.abort();
+                    });
+
+                    // After timeout connection throws Error, so we have to handle it
+                    req.on('error', function(err) {
+                        console.log('error');
+                        return cb(err);
+                    });
+
+                    return req;
+                } else if ((typeof window !== 'undefined' || typeof chrome === 'object') && typeof $ == 'function') { // in browser or chrome extension with jQuery
+                    $.ajax(
+                          (window.location.protocol == 'https:' ? 'https:' : 'http:') + '//'
+                        + this.params.host
+                        + (window.location.protocol != 'https:' ? ':' + this.params.port : '')
+                        + '/' + methodName,
+                        {
+                            method: 'POST',
+                            data: JSON.stringify(postData),
+                            dataType: 'json',
+                            success: function (jsonResult) {
+                                if (jsonResult && jsonResult.errorId) {
+                                    return cb(new Error(jsonResult.errorDescription, jsonResult.errorCode), jsonResult);
+                                }
+
+                                cb(false, jsonResult);
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                cb(new Error(textStatus != 'error' ? textStatus : 'Unknown error, watch console')); // should be errorThrown
+                            }
                         }
-
+                    );
+                } else {
+                    console.error('Application should be run either in NodeJs environment or has jQuery to be included');
+                }
+            } else {
+                // move to subclass
+                // determinant init
+                chrome.runtime.sendMessage({
+                        type: methodName + 'PrecachedRecaptcha',
+                        postData: postData
+                    },
+                    function (jsonResult) { // err, jsonResult
                         if (jsonResult.errorId) {
                             return cb(new Error(jsonResult.errorDescription, jsonResult.errorCode), jsonResult);
                         }
 
                         return cb(null, jsonResult);
-                    });
-                });
-
-                // send post data
-                req.write(JSON.stringify(postData));
-                req.end();
-
-                // timeout in milliseconds
-                req.setTimeout(connectionTimeout * 1000);
-                req.on('timeout', function() {
-                    console.log('timeout');
-                    req.abort();
-                });
-
-                // After timeout connection throws Error, so we have to handle it
-                req.on('error', function(err) {
-                    console.log('error');
-                    return cb(err);
-                });
-
-                return req;
-            } else if ((typeof window !== 'undefined' || typeof chrome === 'object') && typeof $ == 'function') { // in browser or chrome extension with jQuery
-                $.ajax(
-                      (window.location.protocol == 'https:' ? 'https:' : 'http:') + '//'
-                    + this.params.host
-                    + (window.location.protocol != 'https:' ? ':' + this.params.port : '')
-                    + '/' + methodName,
-                    {
-                        method: 'POST',
-                        data: JSON.stringify(postData),
-                        dataType: 'json',
-                        success: function (jsonResult) {
-                            if (jsonResult && jsonResult.errorId) {
-                                return cb(new Error(jsonResult.errorDescription, jsonResult.errorCode), jsonResult);
-                            }
-
-                            cb(false, jsonResult);
-                        },
-                        error: function (jqXHR, textStatus, errorThrown) {
-                            cb(new Error(textStatus != 'error' ? textStatus : 'Unknown error, watch console')); // should be errorThrown
-                        }
                     }
                 );
-            } else {
-                console.error('Application should be run either in NodeJs environment or has jQuery to be included');
             }
         };
 
@@ -337,7 +358,7 @@ var Anticaptcha = function(clientKey) {
             this.params.port = value;
         };
 
-    }(clientKey);
+    }(clientKey, usePrecaching);
 };
 
 if (typeof process === 'object' && typeof require === 'function') { // NodeJS
