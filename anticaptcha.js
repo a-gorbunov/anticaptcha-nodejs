@@ -1,5 +1,7 @@
 var Anticaptcha = function(clientKey, usePrecaching) {
     return new function(clientKey, usePrecaching) {
+        usePrecaching = !!usePrecaching; // false by default
+        
         this.params = {
             host: 'api.anti-captcha.com',
             port: 80,
