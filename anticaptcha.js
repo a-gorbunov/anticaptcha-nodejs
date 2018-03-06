@@ -15,6 +15,7 @@ var Anticaptcha = function(clientKey) {
             proxyLogin: null,
             proxyPassword: null,
             userAgent: '',
+            cookies: '',
 
             // image
             phrase: null,
@@ -155,7 +156,8 @@ var Anticaptcha = function(clientKey) {
                         proxyPort:      this.params.proxyPort,
                         proxyLogin:     this.params.proxyLogin,
                         proxyPassword:  this.params.proxyPassword,
-                        userAgent:      this.params.userAgent
+                        userAgent:      this.params.userAgent,
+                        cookies:        this.params.cookies
                     };
             }
 
@@ -293,6 +295,10 @@ var Anticaptcha = function(clientKey) {
 
         this.setUserAgent = function (value) {
             this.params.userAgent = value;
+        };
+
+        this.setCookies = function (value) {
+            this.params.cookies = value;
         };
 
         // image
