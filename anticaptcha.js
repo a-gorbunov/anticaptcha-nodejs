@@ -19,6 +19,9 @@ var Anticaptcha = function(clientKey, usePrecaching) {
             userAgent: '',
             cookies: '',
 
+            // FunCaptcha
+            websitePublicKey: null,
+
             // image
             phrase: null,
             case: null,
@@ -87,9 +90,23 @@ var Anticaptcha = function(clientKey, usePrecaching) {
             this.createTask(cb, 'NoCaptchaTaskProxyless');
         };
 
+        this.createFunCaptchaTask = function(cb) {
+            this.createTask(cb, 'FunCaptchaTask');
+        };
+
         this.createImageToTextTask = function (taskData, cb) {
             this.createTask(cb, 'ImageToTextTask', taskData);
         };
+
+        this.getTaskRawResult = function(jsonResult) {
+            if (typeof jsonResult.solution.gRecaptchaResponse != 'undefined') {
+                return jsonResult.solution.gRecaptchaResponse;
+            } else if (typeof jsonResult.solution.token != 'undefined') {
+                return jsonResult.solution.token;
+            } else {
+                return jsonResult.solution.text;
+            }
+        }
 
         this.getTaskSolution = function (taskId, cb, currentAttempt, tickCb) {
             currentAttempt = currentAttempt || 0;
@@ -127,7 +144,11 @@ var Anticaptcha = function(clientKey, usePrecaching) {
                         }
                         return that.getTaskSolution(taskId, cb, currentAttempt + 1, tickCb);
                     } else if (jsonResult.status == 'ready') {
-                        return cb(null, typeof jsonResult.solution.gRecaptchaResponse != 'undefined' ? jsonResult.solution.gRecaptchaResponse : jsonResult.solution.text, jsonResult);
+                        return cb(
+                            null,
+                            that.getTaskRawResult(jsonResult),
+                            jsonResult
+                        );
                     }
                 });
             }, waitingInterval * 1000);
@@ -150,6 +171,19 @@ var Anticaptcha = function(clientKey, usePrecaching) {
                         websiteURL:     this.params.websiteUrl,
                         websiteKey:     this.params.websiteKey,
                         websiteSToken:  this.params.websiteSToken
+                    };
+                    break;
+                case 'FunCaptchaTask':
+                    return {
+                        websiteURL:         this.params.websiteUrl,
+                        websitePublicKey:   this.params.websitePublicKey,
+                        proxyType:          this.params.proxyType,
+                        proxyAddress:       this.params.proxyAddress,
+                        proxyPort:          this.params.proxyPort,
+                        proxyLogin:         this.params.proxyLogin,
+                        proxyPassword:      this.params.proxyPassword,
+                        userAgent:          this.params.userAgent,
+                        cookies:            this.params.cookies
                     };
                     break;
                 default: // NoCaptchaTask
@@ -294,6 +328,10 @@ var Anticaptcha = function(clientKey, usePrecaching) {
 
         this.setWebsiteSToken = function (value) {
             this.params.websiteSToken = value;
+        };
+
+        this.setWebsitePublicKey = function (value) {
+            this.params.websitePublicKey = value;
         };
 
         this.setProxyType = function (value) {
