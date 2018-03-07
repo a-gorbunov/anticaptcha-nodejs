@@ -28,6 +28,11 @@ var Anticaptcha = function(clientKey) {
             minLength: null,
             maxLength: null,
 
+            // CustomCaptcha
+            imageUrl: null,
+            assignment: null,
+            forms: null,
+
             softId: null,
             languagePool: null
         };
@@ -96,11 +101,17 @@ var Anticaptcha = function(clientKey) {
             this.createTask(cb, 'ImageToTextTask', taskData);
         };
 
+        this.createCustomCaptchaTask = function (cb) {
+            this.createTask(cb, 'CustomCaptchaTask');
+        };
+
         this.getTaskRawResult = function(jsonResult) {
             if (typeof jsonResult.solution.gRecaptchaResponse != 'undefined') {
                 return jsonResult.solution.gRecaptchaResponse;
             } else if (typeof jsonResult.solution.token != 'undefined') {
                 return jsonResult.solution.token;
+            } else if (typeof jsonResult.solution.answers != 'undefined') {
+                return jsonResult.solution.answers;
             } else {
                 return jsonResult.solution.text;
             }
@@ -150,6 +161,12 @@ var Anticaptcha = function(clientKey) {
 
         this.getPostData = function(type) {
             switch (type) {
+                case 'CustomCaptchaTask':
+                    return {
+                        imageUrl:       this.params.imageUrl,
+                        assignment:     this.params.assignment,
+                        forms:          this.params.forms
+                    };
                 case 'ImageToTextTask':
                     return {
                         phrase:         this.params.phrase,
@@ -364,6 +381,17 @@ var Anticaptcha = function(clientKey) {
             this.params.maxLength = value;
         };
 
+        this.setImageUrl = function (value) {
+            this.params.imageUrl = value;
+        };
+
+        this.setAssignment = function (value) {
+            this.params.assignment = value;
+        };
+
+        this.setForms = function (value) {
+            this.params.forms = value;
+        };
 
         this.setSoftId = function (value) {
             this.params.softId = value;
