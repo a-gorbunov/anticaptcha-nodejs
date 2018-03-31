@@ -287,8 +287,8 @@ var Anticaptcha = function(clientKey, usePrecaching) {
                     });
 
                     return req;
-                } else if ((typeof window !== 'undefined' || typeof chrome === 'object') && typeof $ == 'function') { // in browser or chrome extension with jQuery
-                    $.ajax(
+                } else if ((typeof window !== 'undefined' || typeof chrome === 'object') && typeof jQuery == 'function') { // in browser or chrome extension with jQuery
+                    jQuery.ajax(
                           (window.location.protocol == 'https:' ? 'https:' : 'http:') + '//'
                         + this.params.host
                         + (window.location.protocol != 'https:' ? ':' + this.params.port : '')
