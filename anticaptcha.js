@@ -99,6 +99,10 @@ var Anticaptcha = function(clientKey, usePrecaching) {
             this.createTask(cb, 'FunCaptchaTask');
         };
 
+        this.createFunCaptchaTaskProxyless = function(cb) {
+            this.createTask(cb, 'FunCaptchaTaskProxyless');
+        };
+
         this.createImageToTextTask = function (taskData, cb) {
             this.createTask(cb, 'ImageToTextTask', taskData);
         };
@@ -203,6 +207,11 @@ var Anticaptcha = function(clientKey, usePrecaching) {
                         cookies:            this.params.cookies
                     };
                     break;
+                case 'FunCaptchaTaskProxyless':
+                    return {
+                        websiteURL:         this.params.websiteUrl,
+                        websitePublicKey:   this.params.websitePublicKey,
+                    }
                 default: // NoCaptchaTask
                     return {
                         websiteURL:     this.params.websiteUrl,
