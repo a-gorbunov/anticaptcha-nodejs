@@ -39,6 +39,9 @@ var Anticaptcha = function(clientKey, usePrecaching) {
             languagePool: null
         };
 
+        var customData = {
+        };
+
         var connectionTimeout = 20,
             firstAttemptWaitingInterval = 5,
             normalWaitingInterval = 2;
@@ -57,10 +60,30 @@ var Anticaptcha = function(clientKey, usePrecaching) {
             });
         };
 
+        this.setCustomData = function(key, value) {
+            // it shouldn't be a default parameter name
+            if (typeof this.params[key] !== 'undefined') {
+                return;
+            }
+
+            customData[key] = value;
+        }
+
+        this.clearCustomData = function() {
+            customData = {};
+        }
+
         this.createTask = function (cb, type, taskData) {
             type = typeof type == 'undefined' ? 'NoCaptchaTask' : type;
             var taskPostData = this.getPostData(type);
             taskPostData.type = type;
+
+            // add custom data to post data
+            for (var i in customData) {
+                if (typeof taskPostData[i] === 'undefined') {
+                    taskPostData[i] = customData[i];
+                }
+            }
 
             // Merge incoming and already fetched taskData, incoming data has priority
             if (typeof taskData == 'object') {
