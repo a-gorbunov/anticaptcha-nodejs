@@ -20,6 +20,10 @@ var Anticaptcha = function(clientKey) {
             // FunCaptcha
             websitePublicKey: null,
 
+            // GeeTest
+            websiteChallenge: null,
+            geetestApiServerSubdomain: null,
+
             // image
             phrase: null,
             case: null,
@@ -101,6 +105,14 @@ var Anticaptcha = function(clientKey) {
             this.createTask(cb, 'FunCaptchaTaskProxyless');
         };
 
+        this.createGeeTestTask = function(cb) {
+            this.createTask(cb, 'GeeTestTask');
+        };
+
+        this.createGeeTestTaskProxyless = function(cb) {
+            this.createTask(cb, 'GeeTestTaskProxyless');
+        };
+
         this.createImageToTextTask = function (taskData, cb) {
             this.createTask(cb, 'ImageToTextTask', taskData);
         };
@@ -116,8 +128,10 @@ var Anticaptcha = function(clientKey) {
                 return jsonResult.solution.token;
             } else if (typeof jsonResult.solution.answers != 'undefined') {
                 return jsonResult.solution.answers;
-            } else {
+            } else if (typeof jsonResult.solution.text !== 'undefined') {
                 return jsonResult.solution.text;
+            } else {
+                return jsonResult.solution;
             }
         }
 
@@ -205,6 +219,29 @@ var Anticaptcha = function(clientKey) {
                     return {
                         websiteURL:         this.params.websiteUrl,
                         websitePublicKey:   this.params.websitePublicKey,
+                    }
+                case 'GeeTestTask':
+                    return {
+                        websiteURL:                 this.params.websiteUrl,
+                        gt:                         this.params.websiteKey,
+                        challenge:                  this.params.websiteChallenge,
+                        geetestApiServerSubdomain:  this.params.geetestApiServerSubdomain,
+
+                        proxyType:                  this.params.proxyType,
+                        proxyAddress:               this.params.proxyAddress,
+                        proxyPort:                  this.params.proxyPort,
+                        proxyLogin:                 this.params.proxyLogin,
+                        proxyPassword:              this.params.proxyPassword,
+                        userAgent:                  this.params.userAgent,
+                        cookies:                    this.params.cookies
+                    };
+                    break;
+                case 'GeeTestTaskProxyless':
+                    return {
+                        websiteURL:                 this.params.websiteUrl,
+                        gt:                         this.params.websiteKey,
+                        challenge:                  this.params.websiteChallenge,
+                        geetestApiServerSubdomain:  this.params.geetestApiServerSubdomain,
                     }
                 default: // NoCaptchaTask
                     return {
@@ -335,6 +372,14 @@ var Anticaptcha = function(clientKey) {
 
         this.setWebsitePublicKey = function (value) {
             this.params.websitePublicKey = value;
+        };
+
+        this.setWebsiteChallenge = function (value) {
+            this.params.websiteChallenge = value;
+        };
+
+        this.setGeetestApiServerSubdomain = function (value) {
+            this.params.geetestApiServerSubdomain = value;
         };
 
         this.setProxyType = function (value) {
