@@ -190,10 +190,15 @@ var Anticaptcha = function(clientKey, usePrecaching) {
                     }
 
                     if (jsonResult.status == 'processing') {
+                        if (typeof jsonResult.newTaskId !== 'undefined') {
+                            taskId = jsonResult.newTaskId;
+                        }
+
                         // Every call I'm ticki-ing
                         if (tickCb) {
                             tickCb();
                         }
+
                         return that.getTaskSolution(taskId, cb, currentAttempt + 1, tickCb);
                     } else if (jsonResult.status == 'ready') {
                         return cb(
