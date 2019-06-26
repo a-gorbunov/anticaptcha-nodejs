@@ -17,6 +17,10 @@ var Anticaptcha = function(clientKey) {
             userAgent: '',
             cookies: '',
 
+            // reCAPTCHA 3
+            minScore: '',
+            pageAction: '',
+
             // FunCaptcha
             websitePublicKey: null,
 
@@ -95,6 +99,10 @@ var Anticaptcha = function(clientKey) {
 
         this.createTaskProxyless = function (cb) {
             this.createTask(cb, 'NoCaptchaTaskProxyless');
+        };
+
+        this.createRecaptchaV3TaskProxyless = function (cb) {
+            this.createTask(cb, 'RecaptchaV3TaskProxyless');
         };
 
         this.createFunCaptchaTask = function(cb) {
@@ -200,6 +208,14 @@ var Anticaptcha = function(clientKey) {
                         websiteURL:     this.params.websiteUrl,
                         websiteKey:     this.params.websiteKey,
                         websiteSToken:  this.params.websiteSToken
+                    };
+                    break;
+                case 'RecaptchaV3TaskProxyless':
+                    return {
+                        websiteURL:     this.params.websiteUrl,
+                        websiteKey:     this.params.websiteKey,
+                        minScore:       this.params.minScore,
+                        pageAction:     this.params.pageAction,
                     };
                     break;
                 case 'FunCaptchaTask':
@@ -364,6 +380,14 @@ var Anticaptcha = function(clientKey) {
 
         this.setWebsiteKey = function (value) {
             this.params.websiteKey = value;
+        };
+
+        this.setMinScore = function (value) {
+            this.params.minScore = value;
+        };
+
+        this.setPageAction = function (value) {
+            this.params.pageAction = value;
         };
 
         this.setWebsiteSToken = function (value) {
